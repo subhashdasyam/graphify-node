@@ -28,7 +28,8 @@
     "start": "tsx src/cli.ts"
   },
   "dependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "web-tree-sitter": "^0.26.8"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

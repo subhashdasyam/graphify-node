@@ -103,7 +103,7 @@ export function surprisingConnections(graph: Graph, communities: Record<number, 
     const tgtFile = String(tgtNode.source_file ?? "");
     if (!srcFile || !tgtFile || srcFile === tgtFile) continue;
 
-    let score = { AMBIGUOUS: 3, INFERRED: 2, EXTRACTED: 1 }[edge.confidence] ?? 1;
+    let score = { AMBIGUOUS: 3, INFERRED: 2, STATIC_RESOLVED: 1, EXTRACTED: 1 }[edge.confidence] ?? 1;
     const reasons: string[] = [];
     if (edge.confidence !== "EXTRACTED") reasons.push(`${edge.confidence.toLowerCase()} connection`);
     if (edge.confidence === "INFERRED" && edge.relation === "calls" && crossLanguage(srcFile, tgtFile)) score = 0;

@@ -1,7 +1,7 @@
 import type { Extraction } from "./types.js";
 
-const validFileTypes = new Set(["code", "document", "paper", "image", "video", "rationale", "concept"]);
-const validConfidences = new Set(["EXTRACTED", "INFERRED", "AMBIGUOUS"]);
+const validFileTypes = new Set(["code", "document", "paper", "image", "video", "rationale", "concept", "dependency"]);
+const validConfidences = new Set(["EXTRACTED", "STATIC_RESOLVED", "INFERRED", "AMBIGUOUS"]);
 
 export function validateExtraction(data: unknown): string[] {
   if (!data || typeof data !== "object") return ["Extraction must be a JSON object"];

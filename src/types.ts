@@ -5,9 +5,12 @@ export type FileType =
   | "image"
   | "video"
   | "rationale"
-  | "concept";
+  | "concept"
+  | "dependency";
 
-export type Confidence = "EXTRACTED" | "INFERRED" | "AMBIGUOUS";
+export type Confidence = "EXTRACTED" | "STATIC_RESOLVED" | "INFERRED" | "AMBIGUOUS";
+
+export type EvidenceSource = "ast" | "lsp" | "regex" | "llm";
 
 export interface GraphNode {
   id: string;
@@ -50,6 +53,7 @@ export interface RawCall {
   source_file: string;
   source_location?: string | null;
   is_member_call?: boolean;
+  call_site_nid?: string;
 }
 
 export interface Extraction {
