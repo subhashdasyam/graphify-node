@@ -22,6 +22,11 @@ Optional external tools:
 - `yt-dlp` for downloading video/audio URLs
 - `whisper-ctranslate2` or `whisper` for transcription
 
+Bundled parsing assets:
+
+- `vendor/tree-sitter/*.wasm` grammars are used by the default tree-sitter extractor.
+- Set `GRAPHIFY_TREE_SITTER=0` to fall back to the lightweight built-in extractors.
+
 ## Installation
 
 ### Global Install From This Checkout
@@ -74,6 +79,7 @@ graphify-node/
   src/                 TypeScript source
   test/                Node test suite
   skills/skill.md      bundled assistant skill installed by graphify install
+  vendor/tree-sitter/  bundled WASM grammars used by tree-sitter extraction
   package.json         npm package metadata and bin definitions
   tsconfig.json
 ```

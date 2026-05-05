@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as ts from "typescript";
 import { DOC_EXTENSIONS, IMAGE_EXTENSIONS, PAPER_EXTENSIONS, VIDEO_EXTENSIONS } from "./detect.js";
+import { extractTreeSitterSource, hasTreeSitterExtractor } from "./treeSitterExtract.js";
 import type { Confidence, Extraction, FileType, GraphEdge, GraphNode, RawCall } from "./types.js";
 import { fileStem, lineNumberFromOffset, makeId, relativeSource } from "./utils.js";
 
@@ -27,6 +28,7 @@ interface FunctionBody {
 const JS_TS_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".ts", ".tsx", ".vue", ".svelte"]);
 const PY_EXTENSIONS = new Set([".py", ".pyw"]);
 const RATIONALE_PREFIXES = ["# NOTE:", "# IMPORTANT:", "# HACK:", "# WHY:", "# RATIONALE:", "# TODO:", "# FIXME:"];
+const TREE_SITTER_DISABLED_VALUES = new Set(["0", "false", "no", "off"]);
 
 function createContext(filePath: string, root: string, fileType: FileType = "code"): ExtractContext {
   const abs = path.resolve(filePath);
@@ -486,9 +488,21 @@ export async function extractFile(filePath: string, options: { root?: string } =
   }
 
   if (DOC_EXTENSIONS.has(ext)) return extractDocumentSource(abs, source, root);
+  if (shouldUseTreeSitter(abs)) {
+    const treeSitterExtraction = await extractTreeSitterSource(abs, source, root);
+    if (treeSitterExtraction && !treeSitterExtraction.error && treeSitterExtraction.nodes.length > 0) {
+      return treeSitterExtraction;
+    }
+  }
   if (PY_EXTENSIONS.has(ext)) return extractPythonSource(abs, source, root);
   if (JS_TS_EXTENSIONS.has(ext)) return extractTypeScriptSource(abs, source, root);
   return extractGenericCodeSource(abs, source, root);
+}
+
+function shouldUseTreeSitter(filePath: string): boolean {
+  const setting = process.env.GRAPHIFY_TREE_SITTER?.toLowerCase();
+  if (setting && TREE_SITTER_DISABLED_VALUES.has(setting)) return false;
+  return hasTreeSitterExtractor(filePath);
 }
 
 export async function extractFiles(filePaths: string[], options: { root?: string } = {}): Promise<Extraction> {
@@ -517,6 +531,23 @@ export async function extractFiles(filePaths: string[], options: { root?: string
       context: "call",
       weight: 0.6
     });
+    if (rawCall.call_site_nid) {
+      const resolveKey = `${rawCall.call_site_nid}\u0000${ids[0]}\u0000resolves_to`;
+      if (!seenPairs.has(resolveKey)) {
+        seenPairs.add(resolveKey);
+        edges.push({
+          source: rawCall.call_site_nid,
+          target: ids[0],
+          relation: "resolves_to",
+          confidence: "INFERRED",
+          confidence_score: 0.6,
+          source_file: rawCall.source_file,
+          source_location: rawCall.source_location ?? null,
+          context: "call",
+          weight: 0.6
+        });
+      }
+    }
   }
 
   return {

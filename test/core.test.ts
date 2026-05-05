@@ -22,7 +22,20 @@ test("extractFiles finds Python classes, functions, and calls", async () => {
     assert(labels.includes("Transformer"));
     assert(labels.includes(".forward()"));
     assert(labels.includes("normalize()"));
-    assert(extraction.edges.some((edge) => edge.relation === "calls" && edge.confidence === "EXTRACTED"));
+    assert(extraction.edges.some((edge) => edge.relation === "calls" && ["EXTRACTED", "STATIC_RESOLVED"].includes(edge.confidence)));
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("extractFiles uses tree-sitter when a bundled grammar is available", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "graphify-ts-tree-sitter-"));
+  try {
+    const file = path.join(dir, "main.ts");
+    await writeFile(file, "export function helper() { return 1; }\nexport function run() { return helper(); }\n");
+    const extraction = await extractFiles([file], { root: dir });
+    assert(extraction.nodes.some((node) => node.parser === "tree-sitter" && node.language === "typescript"));
+    assert(extraction.edges.some((edge) => edge.relation === "calls" && edge.confidence === "STATIC_RESOLVED"));
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

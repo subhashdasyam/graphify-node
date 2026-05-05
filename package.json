@@ -17,6 +17,7 @@
   },
   "files": [
     "dist",
+    "vendor",
     "skills",
     "README.md"
   ],
