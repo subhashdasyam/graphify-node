@@ -132,6 +132,12 @@ Include lightweight document heading extraction:
 graphify build . --documents
 ```
 
+Generate an agent-crawlable markdown wiki:
+
+```bash
+graphify build . --wiki
+```
+
 Primary outputs:
 
 ```text
@@ -139,6 +145,8 @@ graphify-out/
   graph.json
   GRAPH_REPORT.md
   graph.html
+  wiki/
+    index.md
   manifest.json
 ```
 
@@ -184,6 +192,7 @@ graphify explain "SwinTransformer"
 
 ```text
 graphify build [path]
+  --wiki
 graphify update [path]
 graphify cluster-only [path]
 graphify query "<question>"

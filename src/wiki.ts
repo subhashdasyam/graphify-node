@@ -46,7 +46,7 @@ function communityArticle(graph: Graph, cid: number, nodes: string[], label: str
   else lines.push("- No strong cross-community connections detected");
   if (sources.length) lines.push("", "## Source Files", "", ...sources.slice(0, 20).map((src) => `- \`${src}\``));
   lines.push("", "## Audit Trail", "");
-  for (const conf of ["EXTRACTED", "INFERRED", "AMBIGUOUS"]) {
+  for (const conf of ["EXTRACTED", "STATIC_RESOLVED", "INFERRED", "AMBIGUOUS"]) {
     const n = confCounts.get(conf) ?? 0;
     lines.push(`- ${conf}: ${n} (${Math.round((n / totalEdges) * 100)}%)`);
   }

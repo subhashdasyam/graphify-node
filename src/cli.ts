@@ -26,8 +26,11 @@ function usage(): void {
 Commands:
   build [path]              build graphify-out from code files
     --documents             include lightweight document heading extraction
+    --wiki                  also generate graphify-out/wiki markdown
+    --wiki-dir PATH         write wiki markdown to PATH
   update [path]             alias for build; deterministic AST/regex only
   cluster-only [path]       recluster existing graphify-out/graph.json
+    --wiki                  also regenerate graphify-out/wiki markdown
   query "<question>"        BFS/DFS traversal of graph.json
     --dfs                   use depth-first traversal
     --context C             explicit edge context filter; repeatable
@@ -63,29 +66,54 @@ function readRepeatedOption(args: string[], name: string): string[] {
   return values;
 }
 
+function positionalArgs(args: string[], optionsWithValues: string[] = []): string[] {
+  const valueOptions = new Set(optionsWithValues);
+  const values: string[] = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg.startsWith("--")) {
+      const optionName = arg.includes("=") ? arg.slice(0, arg.indexOf("=")) : arg;
+      if (!arg.includes("=") && valueOptions.has(optionName)) i += 1;
+      continue;
+    }
+    values.push(arg);
+  }
+  return values;
+}
+
 async function loadGraph(graphPath: string): Promise<Graph> {
   const raw = JSON.parse(await readFile(graphPath, "utf8")) as NodeLinkGraph;
   return Graph.fromNodeLink(raw);
 }
 
 async function commandBuild(args: string[]): Promise<void> {
-  const root = args.find((arg) => !arg.startsWith("-")) ?? ".";
+  const root = positionalArgs(args, ["--wiki-dir"])[0] ?? ".";
+  const wikiDir = parseOption(args, "--wiki-dir");
   const result = await runBuild({
     root,
     noViz: parseFlag(args, "--no-viz"),
-    includeDocuments: parseFlag(args, "--documents")
+    includeDocuments: parseFlag(args, "--documents"),
+    wiki: parseFlag(args, "--wiki") || wikiDir !== undefined,
+    wikiDir
   });
   console.log(`Built graph: ${result.nodes} nodes, ${result.edges} edges, ${result.communities} communities`);
   console.log(`Report: ${result.reportPath}`);
   console.log(`Graph:  ${result.graphPath}`);
   if (result.htmlPath) console.log(`HTML:   ${result.htmlPath}`);
+  if (result.wikiPath) console.log(`Wiki:   ${result.wikiPath}`);
 }
 
 async function commandClusterOnly(args: string[]): Promise<void> {
-  const root = args.find((arg) => !arg.startsWith("-")) ?? ".";
-  const result = await runClusterOnly(root, { noViz: parseFlag(args, "--no-viz") });
+  const root = positionalArgs(args, ["--wiki-dir"])[0] ?? ".";
+  const wikiDir = parseOption(args, "--wiki-dir");
+  const result = await runClusterOnly(root, {
+    noViz: parseFlag(args, "--no-viz"),
+    wiki: parseFlag(args, "--wiki") || wikiDir !== undefined,
+    wikiDir
+  });
   console.log(`Reclustered graph: ${result.nodes} nodes, ${result.edges} edges, ${result.communities} communities`);
   console.log(`Report: ${result.reportPath}`);
+  if (result.wikiPath) console.log(`Wiki:   ${result.wikiPath}`);
 }
 
 async function commandQuery(args: string[]): Promise<void> {

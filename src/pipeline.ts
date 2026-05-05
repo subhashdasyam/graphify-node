@@ -8,22 +8,32 @@ import { toHtml, toJson, writeReport } from "./export.js";
 import { extractFiles } from "./extract.js";
 import { generateReport } from "./report.js";
 import type { DetectionResult } from "./types.js";
+import { toWiki } from "./wiki.js";
 
 export interface BuildOptions {
   root?: string;
   outDir?: string;
   noViz?: boolean;
   includeDocuments?: boolean;
+  wiki?: boolean;
+  wikiDir?: string;
 }
 
 export interface BuildResult {
   graphPath: string;
   reportPath: string;
   htmlPath?: string;
+  wikiPath?: string;
   nodes: number;
   edges: number;
   communities: number;
   detection: DetectionResult;
+}
+
+interface ClusterOnlyOptions {
+  noViz?: boolean;
+  wiki?: boolean;
+  wikiDir?: string;
 }
 
 export async function runBuild(options: BuildOptions = {}): Promise<BuildResult> {
@@ -68,11 +78,21 @@ export async function runBuild(options: BuildOptions = {}): Promise<BuildResult>
     htmlPath = path.join(outDir, "graph.html");
     await toHtml(graph, communities, htmlPath, labels);
   }
+  let wikiPath: string | undefined;
+  if (options.wiki) {
+    wikiPath = path.resolve(root, options.wikiDir ?? path.join(outDir, "wiki"));
+    await toWiki(graph, communities, wikiPath, {
+      communityLabels: labels,
+      cohesion,
+      godNodes: gods
+    });
+  }
 
   return {
     graphPath,
     reportPath,
     htmlPath,
+    wikiPath,
     nodes: graph.numberOfNodes(),
     edges: graph.numberOfEdges(),
     communities: Object.keys(communities).length,
@@ -80,7 +100,7 @@ export async function runBuild(options: BuildOptions = {}): Promise<BuildResult>
   };
 }
 
-export async function runClusterOnly(root = ".", options: { noViz?: boolean } = {}): Promise<BuildResult> {
+export async function runClusterOnly(root = ".", options: ClusterOnlyOptions = {}): Promise<BuildResult> {
   const resolvedRoot = path.resolve(root);
   const outDir = path.resolve(resolvedRoot, process.env.GRAPHIFY_OUT ?? "graphify-out");
   const graphPath = path.join(outDir, "graph.json");
@@ -121,10 +141,20 @@ export async function runClusterOnly(root = ".", options: { noViz?: boolean } = 
     htmlPath = path.join(outDir, "graph.html");
     await toHtml(graph, communities, htmlPath, labels);
   }
+  let wikiPath: string | undefined;
+  if (options.wiki) {
+    wikiPath = path.resolve(resolvedRoot, options.wikiDir ?? path.join(outDir, "wiki"));
+    await toWiki(graph, communities, wikiPath, {
+      communityLabels: labels,
+      cohesion,
+      godNodes: gods
+    });
+  }
   return {
     graphPath,
     reportPath,
     htmlPath,
+    wikiPath,
     nodes: graph.numberOfNodes(),
     edges: graph.numberOfEdges(),
     communities: Object.keys(communities).length,

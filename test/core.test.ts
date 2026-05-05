@@ -61,13 +61,16 @@ test("runBuild writes graph outputs", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "graphify-ts-build-"));
   try {
     await writeFile(path.join(dir, "main.ts"), "export function helper() { return 1; }\nexport function run() { return helper(); }\n");
-    const result = await runBuild({ root: dir, noViz: true });
+    const result = await runBuild({ root: dir, noViz: true, wiki: true });
     assert(result.nodes >= 3);
     assert(result.edges >= 2);
     const graphJson = await readFile(result.graphPath, "utf8");
     assert.match(graphJson, /helper/);
     const report = await readFile(result.reportPath, "utf8");
     assert.match(report, /Graph Report/);
+    assert(result.wikiPath);
+    const wikiIndex = await readFile(path.join(result.wikiPath, "index.md"), "utf8");
+    assert.match(wikiIndex, /Knowledge Graph Index/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
